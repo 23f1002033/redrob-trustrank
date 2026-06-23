@@ -1,0 +1,29 @@
+
+team_name: "AIM Nexus"
+primary_contact:
+  name: "Ishank Gupta"
+  email: "ishankgpt02@gmail.com"
+  phone: "8630407357"
+github_repository_url: "https://github.com/23f1002033/redrob-trustrank"
+sandbox_demo_link: "TODO"              
+
+compute_environment_summary: "MacBook Pro, 16GB RAM, Python 3.12, CPU-only"
+
+team_members:
+  - name: "Ishank Gupta"
+    email: "ishankgpt02@gmail.com"
+    role: "Lead — architecture, scoring, code"
+  - name: "Muskan Jadon"
+    email: "muskanjadon1006@gmail.com"
+    role: "Contributor — review, evaluation, deck"
+
+methodology_summary: >
+  TrustRank ranks candidates by corroborated evidence, not keyword overlap.
+  We read the one block that stays truthful in this dataset - the career-history
+  descriptions - classify the work into a JD-aligned relevance rubric
+  (ranking/recsys/retrieval > applied ML at product > light/mixed ML >
+  data-eng/SWE > non-tech), then apply JD-explicit penalties (CV/speech-only,
+  pure-services careers, "AI-curious but no professional ML") and an
+  availability multiplier from behavioral signals. Impossible "honeypot"
+  profiles are detected by internal date/skill contradictions and excluded.
+  Pure-Python, CPU-only, no network - reproducible inside the 5-minute budget.

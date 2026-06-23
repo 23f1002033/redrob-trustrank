@@ -1,0 +1,26 @@
+# === DATA — never commit (483MB dataset, samples, generated outputs) ===
+data/
+*.jsonl
+*.json
+!candidate_schema.json          # keep the schema (small, useful reference)
+submission.csv
+*_submission.csv
+!sample_submission.csv          # keep the format reference only
+
+# === reference docs from organizers (optional: keep out of git) ===
+docs/*.docx
+
+# === python ===
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# === os / editor ===
+.DS_Store
+.vscode/
+.idea/
