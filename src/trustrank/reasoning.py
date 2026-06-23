@@ -31,7 +31,7 @@ _FAMILY_JD = {
 
 
 def _pick(options: list[str], cid: str) -> str:
-    """Deterministic per-candidate choice — stable across runs, varied across rows."""
+    """Deterministic per-candidate choice - stable across runs, varied across rows."""
     h = sum(ord(ch) for ch in cid)
     return options[h % len(options)]
 
@@ -42,9 +42,8 @@ def _yoe_clause(yoe: float) -> str:
     if 5 <= yoe <= 9:
         return f"{yoe:.0f}y experience, inside the 5-9y range"
     if yoe < 5:
-        return f"only {yoe:.0f}y, below the JD's band"
-    return f"{yoe:.0f}y, a bit above the JD's stated band"
-
+        return f"only {yoe:.0f}y, below the JD's 6-8y band"
+    return f"{yoe:.0f}y, a touch above the JD's 6-8y band"
 
 def _concern(c: Ranked) -> str | None:
     """Surface one honest, concrete concern from real signals/flags."""
@@ -73,17 +72,16 @@ def reason_for(c: Ranked) -> str:
     """One to two sentences, fully grounded in this candidate's own fields."""
     jd_link = _pick(_FAMILY_JD.get(c.family_label, ["relevant background"]), c.candidate_id)
 
-    # lead: prefer a real description snippet over bare lexicon tokens
     title = c.current_title or "Candidate"
     if c.snippet:
-        lead = f"{title}: \"{c.snippet}\" — {jd_link}."
+        lead = f"{title}: \"{c.snippet}\" - {jd_link}."
     elif c.evidence:
-        lead = f"{title} with {', '.join(c.evidence[:2])} experience — {jd_link}."
+        lead = f"{title} with {', '.join(c.evidence[:2])} experience - {jd_link}."
     else:
-        lead = f"{title} — {jd_link}."
+        lead = f"{title} - {jd_link}."
 
-    tail = _yoe_clause(c.years_experience).capitalize()
-
+    tail = _yoe_clause(c.years_experience)
+    tail = tail[0].upper() + tail[1:]
     pos = _positive_signal(c)
     con = _concern(c)
     if con:
