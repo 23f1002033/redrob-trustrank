@@ -9,6 +9,14 @@ from .jd import REDROB_SENIOR_AI_ENGINEER, JobSpec
 from .relevance import score as score_relevance
 
 
+def _clean_snippet(text: str, limit: int = 140) -> str:
+    """First sentence of a role description, cleaned for use in reasoning."""
+    if not text:
+        return ""
+    s = text.strip().split(". ")[0].strip()
+    return (s[:limit] + "…") if len(s) > limit else s
+
+
 @dataclass
 class Ranked:
     candidate_id: str
@@ -18,6 +26,19 @@ class Ranked:
     current_title: str
     evidence: list = field(default_factory=list)
     flags: list = field(default_factory=list)
+    snippet: str = ""              # a real phrase from their best role description
+    location: str = ""
+    notice_days: float | None = None
+    response_rate: float | None = None
+    open_to_work: bool | None = None
+
+
+def _best_role_snippet(c) -> str:
+    """Snippet from the role that carries the strongest evidence (recency-ish)."""
+    for r in c.roles:
+        if r.is_current and r.description:
+            return _clean_snippet(r.description)
+    return _clean_snippet(c.roles[0].description) if c.roles else ""
 
 
 def rank_candidates(
@@ -36,6 +57,7 @@ def rank_candidates(
             n_hp += 1
             continue
         r = score_relevance(c, jd)
+        sig = c.signals or {}
         cards.append(
             Ranked(
                 candidate_id=c.candidate_id,
@@ -45,6 +67,11 @@ def rank_candidates(
                 current_title=c.current_title,
                 evidence=r.evidence,
                 flags=r.flags,
+                snippet=_best_role_snippet(c),
+                location=c.location,
+                notice_days=sig.get("notice_period_days"),
+                response_rate=sig.get("recruiter_response_rate"),
+                open_to_work=sig.get("open_to_work_flag"),
             )
         )
 
