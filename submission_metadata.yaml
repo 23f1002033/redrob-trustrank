@@ -5,17 +5,20 @@ primary_contact:
   email: "ishankgpt02@gmail.com"
   phone: "8630407357"
 github_repository_url: "https://github.com/23f1002033/redrob-trustrank"
-sandbox_demo_link: "TODO"              
+sandbox_demo_link: "https://redrob-trustrank-aim-nexus.streamlit.app"
 
 compute_environment_summary: "MacBook Pro, 16GB RAM, Python 3.12, CPU-only"
+
+ai_tools_declared:
+  - Claude
 
 team_members:
   - name: "Ishank Gupta"
     email: "ishankgpt02@gmail.com"
-    role: "Lead — architecture, scoring, code"
+    role: "Lead - architecture, scoring, code"
   - name: "Muskan Jadon"
     email: "muskanjadon1006@gmail.com"
-    role: "Contributor — review, evaluation, deck"
+    role: "Contributor - review, evaluation, deck"
 
 methodology_summary: >
   TrustRank ranks candidates by corroborated evidence, not keyword overlap.
