@@ -1,3 +1,10 @@
+"""Ranking core: stream -> honeypot filter -> relevance score -> sorted order.
+
+Single pass over candidates.jsonl. Honeypots are dropped (not ranked).
+Everyone else gets a relevance score; we sort once, descending, breaking ties
+by candidate_id ascending (the submission spec's required deterministic
+tie-break). Memory stays modest (~tens of MB for 100k).
+"""
 from __future__ import annotations
 
 import time
@@ -9,7 +16,7 @@ from .jd import REDROB_SENIOR_AI_ENGINEER, JobSpec
 from .relevance import score as score_relevance
 
 
-def _clean_snippet(text: str, limit: int = 140) -> str:
+def _clean_snippet(text: str, limit: int = 130) -> str:
     """First sentence of a role description, cleaned for use in reasoning."""
     if not text:
         return ""
@@ -26,19 +33,12 @@ class Ranked:
     current_title: str
     evidence: list = field(default_factory=list)
     flags: list = field(default_factory=list)
-    snippet: str = ""              # a real phrase from their best role description
+    # extra facts for grounded reasoning (no hallucination — read from profile)
+    snippet: str = ""              # phrase from the role that EARNED the score
     location: str = ""
     notice_days: float | None = None
     response_rate: float | None = None
     open_to_work: bool | None = None
-
-
-def _best_role_snippet(c) -> str:
-    """Snippet from the role that carries the strongest evidence (recency-ish)."""
-    for r in c.roles:
-        if r.is_current and r.description:
-            return _clean_snippet(r.description)
-    return _clean_snippet(c.roles[0].description) if c.roles else ""
 
 
 def rank_candidates(
@@ -67,7 +67,7 @@ def rank_candidates(
                 current_title=c.current_title,
                 evidence=r.evidence,
                 flags=r.flags,
-                snippet=_best_role_snippet(c),
+                snippet=_clean_snippet(r.best_role_desc),   # role that set the family
                 location=c.location,
                 notice_days=sig.get("notice_period_days"),
                 response_rate=sig.get("recruiter_response_rate"),

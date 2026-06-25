@@ -1,3 +1,11 @@
+"""TrustRank — Streamlit demo / sandbox.
+
+A small hosted UI where reviewers can upload up to ~100 candidates (JSONL or a
+JSON array) and watch the ranking system run end-to-end: honeypot filtering,
+evidence-based scoring, and grounded reasoning — the same code path as rank.py.
+
+Run locally:   streamlit run app.py
+"""
 from __future__ import annotations
 
 import json
@@ -9,12 +17,12 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
-from trustrank.honeypot import detect as detect_honeypot   
-from trustrank.jd import REDROB_SENIOR_AI_ENGINEER as JD    
-from trustrank.reasoning import reason_for                 
-from trustrank.ranker import Ranked, _best_role_snippet    
-from trustrank.relevance import score as score_relevance   
-from trustrank.schema import Candidate                     
+from trustrank.honeypot import detect as detect_honeypot   # noqa: E402
+from trustrank.jd import REDROB_SENIOR_AI_ENGINEER as JD    # noqa: E402
+from trustrank.ranker import Ranked, _clean_snippet         # noqa: E402
+from trustrank.reasoning import reason_for                  # noqa: E402
+from trustrank.relevance import score as score_relevance    # noqa: E402
+from trustrank.schema import Candidate                      # noqa: E402
 
 st.set_page_config(page_title="TrustRank", page_icon="🎯", layout="wide")
 
@@ -47,7 +55,8 @@ def _rank(raws: list[dict]):
         cards.append(Ranked(
             candidate_id=c.candidate_id, score=r.score, family_label=r.family_label,
             years_experience=c.years_experience, current_title=c.current_title,
-            evidence=r.evidence, flags=r.flags, snippet=_best_role_snippet(c),
+            evidence=r.evidence, flags=r.flags,
+            snippet=_clean_snippet(r.best_role_desc),
             location=c.location, notice_days=sig.get("notice_period_days"),
             response_rate=sig.get("recruiter_response_rate"),
             open_to_work=sig.get("open_to_work_flag"),
@@ -56,12 +65,13 @@ def _rank(raws: list[dict]):
     return cards, honeypots
 
 
+# ---------------- UI ----------------
 st.title("🎯 TrustRank")
 st.caption("Evidence-based candidate ranking — ranks corroborated evidence, not keywords.")
 
 with st.expander("How it works", expanded=False):
     st.markdown(
-        "- Reads the **career-history descriptions** (the one truthful block) - "
+        "- Reads the **career-history descriptions** (the one truthful block) — "
         "ignores title/skills bait.\n"
         "- Scores against the JD rubric: ranking/recsys ▸ applied-ML ▸ light-ML ▸ "
         "data-eng/SWE ▸ non-tech.\n"
@@ -87,7 +97,7 @@ if up is not None:
     c1, c2, c3 = st.columns(3)
     c1.metric("Scored & ranked", len(cards))
     c2.metric("Honeypots excluded", len(honeypots))
-    c3.metric("Top family", cards[0].family_label.split("·")[0].strip() if cards else "-")
+    c3.metric("Top family", cards[0].family_label.split("·")[0].strip() if cards else "—")
 
     st.subheader(f"Top {min(top_n, len(cards))}")
     st.dataframe(
@@ -101,7 +111,7 @@ if up is not None:
     if honeypots:
         with st.expander(f"🍯 Honeypots excluded ({len(honeypots)})"):
             for cid, why in honeypots:
-                st.write(f"**{cid}** - {why}")
+                st.write(f"**{cid}** — {why}")
 else:
     st.info("Upload a sample to see the ranking. Try `data/sample_candidates.json` "
             "or `data/first20.jsonl`.")

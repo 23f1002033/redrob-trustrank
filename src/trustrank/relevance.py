@@ -1,3 +1,18 @@
+"""Relevance scoring: evidence -> base tier -> JD penalties -> availability.
+
+For each candidate we:
+  1. classify every role description into a relevance family and take the
+     STRONGEST evidence anywhere in the career (the JD rewards "has shipped at
+     least one ranking/search/recommendation system", so best-evidence wins);
+  2. scale by an experience-band factor (6-8y ideal, 5-9y fine);
+  3. apply JD-explicit multiplicative penalties (CV/speech without NLP-IR,
+     entire-career-at-services, "AI-curious but no professional ML");
+  4. multiply by an availability factor from behavioral signals.
+
+The result carries every component, the matched evidence, and the description
+of the role that set the family - so reasoning quotes the role that actually
+earned the score (not whatever the candidate's current title happens to be).
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -7,6 +22,7 @@ from . import lexicon as lex
 from .jd import JobSpec
 from .schema import TODAY, Candidate
 
+# role-description family -> base-score key in JobSpec.base_scores
 _FAMILY_LABEL = {
     "A_ranking_recsys": "A · ranking/recsys/retrieval",
     "B_applied_ml": "B · applied ML at product",
@@ -31,6 +47,7 @@ class RelevanceResult:
     availability: float = 1.0
     evidence: list[str] = field(default_factory=list)   # matched phrases
     flags: list[str] = field(default_factory=list)      # human-readable notes
+    best_role_desc: str = ""                            # desc of the role that set the family
 
 
 def _classify_role(desc: str) -> tuple[str, list[str]]:
@@ -104,13 +121,18 @@ def _availability(signals: dict, jd: JobSpec) -> tuple[float, list[str]]:
 
 def score(c: Candidate, jd: JobSpec) -> RelevanceResult:
     # 1. strongest evidence anywhere in the career
-    best_family, best_phrases = "E_non_tech", []
+    best_family, best_phrases, best_desc = "E_non_tech", [], ""
     best_base = _base_for("E_non_tech", jd)
     for r in c.roles:
         fam, phrases = _classify_role(r.description.lower())
         b = _base_for(fam, jd)
         if b > best_base:
             best_family, best_phrases, best_base = fam, phrases, b
+            best_desc = r.description
+    # fall back to the current/first role if no tier evidence anywhere
+    if not best_desc:
+        cur = c.current_role()
+        best_desc = cur.description if cur else ""
 
     res = RelevanceResult(
         score=0.0,
@@ -119,6 +141,7 @@ def score(c: Candidate, jd: JobSpec) -> RelevanceResult:
         base=best_base,
         yoe_factor=_yoe_factor(c.years_experience, jd),
         evidence=best_phrases,
+        best_role_desc=best_desc,
     )
 
     alltext = c.all_description_text() + " " + c.summary.lower()
@@ -136,7 +159,8 @@ def score(c: Candidate, jd: JobSpec) -> RelevanceResult:
         res.services_penalty = jd.services_penalty
         res.flags.append("career entirely at services firms")
 
-    # 4. "AI-curious, no professional ML" persona — only when there is no real
+    # 4. "AI-curious, no professional ML" persona - only when there is no real
+    #    ML evidence (descriptions, not claims, decide)
     if best_family not in ("A_ranking_recsys", "B_applied_ml"):
         if any(sig in c.summary.lower() for sig in lex.DECOY_SUMMARY_SIGNATURES):
             res.decoy_penalty = jd.decoy_summary_penalty
